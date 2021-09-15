@@ -18,7 +18,6 @@ __Dependencies:__
 - Currently hard coded to open `lxterminal` on "open with terminal"
 - Currently hard coded to open `micro` on "open file as text"
 
-__Run:__
 __Install:__
 - Copy `files.py` to `/usr/bin/files.py`
 - Copy `files.svg` to `/usr/share/icons/hicolor/64x64/apps/files.svg`
