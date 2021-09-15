@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Files
+GenericName=File Manager
+Comment=Starts the Files File Manager
+Exec=/usr/bin/files.py
+Icon=/usr/share/icons/hicolor/64x64/apps/files.svg
+Terminal=false
+Type=Application
+Categories=System;FileTools;FileManager;Utility;Core;GTK;
+MimeType=inode/directory;
