@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # version: 21-12-25
 
-import os, subprocess, sys, shutil
+import os, subprocess, sys, shutil, time
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -67,8 +67,6 @@ class Files():
         self.view = Gtk.ScrolledWindow()
         self.container.pack_start(self.view, True, True, 0)
 
-        self.store = self.create_store()
-        self.fill_store()
         self.set_window_title()
         self.set_path()
 
@@ -82,7 +80,8 @@ class Files():
         self.upButton.connect("clicked", self.on_up_clicked)
         self.homeButton.connect("clicked", self.on_home_clicked)
 
-        self.iconView.set_model(self.store)
+        self.fill_store()
+
         self.iconView.set_text_column(COL_PATH) # Constant: 0
         self.iconView.set_pixbuf_column(COL_PIXBUF) # Constant: 1
 
@@ -99,42 +98,50 @@ class Files():
         theme = Gtk.IconTheme.get_default()
         return theme.load_icon(name, 64, 0)
 
-    def create_store(self):
-        store = Gtk.ListStore(str, Pixbuf, bool)
-        return store
-
     def fill_store(self):
-        self.store.clear()
-
+        store = Gtk.ListStore(str, Pixbuf, bool)
         if self.current_directory == None:
             return
 
+        #before = time.perf_counter()
         self.theme = Gtk.IconTheme.get_default() # get default theme
-        for fl in sorted(os.listdir(self.current_directory),key=str.lower):
-            if self.show_hidden or not fl[0] == '.': # filter hidden files
-                # Check if directory or not and append to store
-                if os.path.isdir(os.path.join(self.current_directory, fl)):
-                    self.store.append([fl, self.dirIcon, True])
+        folder_content = sorted(os.listdir(self.current_directory),key=str.lower)
+        if len(folder_content) < 200:
+            for fl in folder_content:
+                if self.show_hidden or not fl[0] == '.': # filter hidden files
+                    # Check if directory or not and append to store
+                    if os.path.isdir(os.path.join(self.current_directory, fl)):
+                        store.append([fl, self.dirIcon, True])
+                    else:
+                        self.currentFileIcon = self.genericFileIcon # fallback icon
+                        path = os.path.join(self.current_directory, fl) # current file
+                        self.mimeType = Gio.content_type_guess(filename=path)[0] # guess mime type
+                        if self.mimeType is not None:
+                            # get icon name from mime type
+                            self.iconName = Gio.content_type_get_icon(self.mimeType)
+                            # check if theme has mime type icon 
+                            if self.theme.has_icon(self.iconName.get_names()[0]):
+                                # set icon
+                                self.currentFileIcon = self.get_icon(self.iconName.get_names()[0])
+                            else:
+                                # get generic icon name
+                                self.iconName = Gio.content_type_get_generic_icon_name(self.mimeType)
+                                 # check if theme has generic icon
+                                if self.theme.has_icon(self.iconName):
+                                    # set generic icon
+                                    self.currentFileIcon = self.get_icon(self.iconName)
+                        # fill store
+                        store.append([fl, self.currentFileIcon, False])
+        else:
+            for fl in folder_content:
+                if os.path.isdir(self.current_directory + "/" + fl):
+                    store.append([fl, self.dirIcon , True])
                 else:
-                    self.currentFileIcon = self.genericFileIcon # fallback icon
-                    path = os.path.join(self.current_directory, fl) # current file
-                    self.mimeType = Gio.content_type_guess(filename=path)[0] # guess mime type
-                    if self.mimeType is not None:
-                        # get icon name from mime type
-                        self.iconName = Gio.content_type_get_icon(self.mimeType)
-                        # check if theme has mime type icon 
-                        if self.theme.has_icon(self.iconName.get_names()[0]):
-                            # set icon
-                            self.currentFileIcon = self.get_icon(self.iconName.get_names()[0])
-                        else:
-                            # get generic icon name
-                            self.iconName = Gio.content_type_get_generic_icon_name(self.mimeType)
-                             # check if theme has generic icon
-                            if self.theme.has_icon(self.iconName):
-                                # set generic icon
-                                self.currentFileIcon = self.get_icon(self.iconName)
-                    # fill store
-                    self.store.append([fl, self.currentFileIcon, False])
+                    store.append([fl, self.genericFileIcon , False])
+                
+        #print("Time: " + str(time.perf_counter()-before))
+        self.iconView.set_model(store)
+
 
     def set_window_title(self):
         self.window.set_title(self.current_directory)
