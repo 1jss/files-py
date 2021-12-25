@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# version: 21-12-25
 
 import os, subprocess, sys, shutil
 
@@ -312,6 +313,8 @@ class Files():
             if(os.path.isfile(self.full_path)):
             	shutil.copy(self.full_path,copy_to_path)
             elif(os.path.isdir(self.full_path)):
+                if os.path.exists(copy_to_path): # Remove if existing
+                    shutil.rmtree(copy_to_path)
                 shutil.copytree(self.full_path,copy_to_path)
             self.fill_store()
             print(copy_to_path)
